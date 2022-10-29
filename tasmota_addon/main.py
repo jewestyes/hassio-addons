@@ -116,7 +116,7 @@ def publish(topic, command, client):
 
 
 def getdata_mqtt(client: mqtt_client):
-    def on_message(msg):
+    def on_message(client, userdata, msg):
         data.append(yaml.safe_load(msg.payload.decode()))
 
     client.subscribe(topic + '/+/config')
