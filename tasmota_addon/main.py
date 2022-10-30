@@ -71,7 +71,7 @@ def is_input_correct():
     return len(log) == 0
 
 
-def http_to_send_request(need_to_send_commands=False):
+def http_send_request(need_to_send_commands=False):
     print('Start sending requests via HTTP')
     if not has_ip:
         if len(data) == 0:
@@ -96,8 +96,8 @@ def connect_mqtt() -> mqtt_client:
     def on_connect(client, userdata, flags, rc):
         if rc == 0:
             print("Connected to MQTT Broker!")
-        if rc == 5:
-            print('Failed to connect MQTT, not authorized')
+        elif rc == 5:
+            print("Failed to connect MQTT, not authorized")
         else:
             print("Failed to connect MQTT, return code %d\n", rc)
 
@@ -158,26 +158,32 @@ def run():
 
         if cfg['send_with'] == "TEST":
             if(has_ip):
-                http_to_send_request()
+                http_send_request()
             else:
                 try:
                     client = connect_mqtt()
                     getdata_mqtt(client)
-                    http_to_send_request()
+
+                    if not client.is_connected():
+                        return
+                    http_send_request()
+                    return
                 except Exception as ex:
                     print(f'MQTT connection failed \n{ex}')
-            return
+                    return
         if cfg['send_with'] == "MQTT" or has_ip == False:
             try:
                 client = connect_mqtt()
                 getdata_mqtt(client)
+                if not client.is_connected():
+                    return
                 if cfg['send_with'] == "MQTT":
                     mqtt_send_command(client)
             except Exception as ex:
                 print(f'MQTT connection failed \n{ex}')
                 return
         if cfg['send_with'] == "HTTP":
-            http_to_send_request(need_to_send_commands=True)
+            http_send_request(need_to_send_commands=True)
         time.sleep(3)
         ssh_connect(need_to_send_commands=True)
 
