@@ -1,7 +1,7 @@
 ---
 name: tasmota-addon
 slug: tasmota-addon-test
-version: 1.2
+version: 1.3
 description: Just a Simple Addon
 url: https://github.com/jewestyes
 arch:
@@ -17,9 +17,12 @@ options:
   ssh_command: []
   device_ip: []
   mqtt_broker: ""
+  mqtt_port: 1883
+  mqtt_username: ""
+  mqtt_password: ""
   wifi_ssid: ""
   wifi_pass: ""
-  send_with: MQTT
+  send_with: TEST
 schema:
   ssh_ip: match(^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)(\.(?!$)|$)){4}$)
   ssh_username: str
@@ -29,6 +32,9 @@ schema:
   device_ip:
     - str?
   mqtt_broker: str?
+  mqtt_port: int?
+  mqtt_username: str?
+  mqtt_password: str?
   wifi_ssid: match(^(?=.{2,30}$)[a-zA-Z0-9._]+$)
   wifi_pass: match(^(?=.{8,30}$)[a-zA-Z0-9._]+$)
-  send_with: list(MQTT|HTTP)
+  send_with: list(MQTT|HTTP|TEST)

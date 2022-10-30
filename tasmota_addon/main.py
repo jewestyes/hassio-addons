@@ -15,7 +15,7 @@ def yaml_parse():
             print(exc)
 
 
-def ssh_connect():
+def ssh_connect(need_to_send_commands=False):
     try:
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -24,16 +24,19 @@ def ssh_connect():
                        password=ssh_password,
                        look_for_keys=False,
                        allow_agent=False)
-        commands_4_MT = ssh_command
         print(f"Connected via SSH {ssh_ip}")
-        for line in commands_4_MT:
-            stdin, stdout, stderr = client.exec_command(line)
-            print(f"Command '{line}' sent successfully!")
-            print(stdout.read().decode('ascii'))
-            time.sleep(0.1)
+        if(need_to_send_commands):
+            commands_4_RT = ssh_command
+            for line in commands_4_RT:
+                stdin, stdout, stderr = client.exec_command(line)
+                print(f"Command '{line}' sent successfully!")
+                print(stdout.read().decode('ascii'))
+                time.sleep(0.1)
         client.close()
     except Exception as ex:
         print(f"Connect via SSH went wrong! \n{ex}")
+        return False
+    return True
 
 
 def is_input_correct():
@@ -68,7 +71,7 @@ def is_input_correct():
     return len(log) == 0
 
 
-def http_send_command():
+def http_to_send_request(need_to_send_commands=False):
     print('Start sending requests via HTTP')
     if not has_ip:
         if len(data) == 0:
@@ -78,7 +81,10 @@ def http_send_command():
             device_ip.append(d['ip'])
     for ip in device_ip:
         try:
-            response = requests.get(url=f"http://{ip}/wi?s1={wifi_ssid}&p1={wifi_pass}&save=")
+            if(need_to_send_commands):
+                response = requests.get(url=f"http://{ip}/wi?s1={wifi_ssid}&p1={wifi_pass}&save=")
+            else:
+                response = requests.get(url=f"http://{ip}/")
             if response.status_code == 200:
                 print(f"Request sent to {ip} successfully")
                 time.sleep(0.1)
@@ -97,11 +103,14 @@ def connect_mqtt() -> mqtt_client:
 
     broker = cfg['mqtt_broker']
     topic = "tasmota/discovery"
-
+    username = cfg['mqtt_username']
+    password = cfg['mqtt_password']
+    mqtt_port = cfg['mqtt_port']
     client_id = f'python-mqtt-{random.randint(0, 1000)}'
     client = mqtt_client.Client(client_id)
+    client.username_pw_set(username, password)
     client.on_connect = on_connect
-    client.connect(broker, 1883)
+    client.connect(broker, mqtt_port)
     return client
 
 
@@ -119,8 +128,11 @@ def getdata_mqtt(client: mqtt_client):
     def on_message(client, userdata, msg):
         data.append(yaml.safe_load(msg.payload.decode()))
 
+    client.loop_start()
     client.subscribe(topic + '/+/config')
     client.on_message = on_message
+    time.sleep(1)
+    client.loop_stop()
 
 
 def mqtt_send_command(client: mqtt_client):
@@ -131,7 +143,6 @@ def mqtt_send_command(client: mqtt_client):
 def subscribe(client: mqtt_client):
     def on_message(msg):
         print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
-
     client.subscribe(topic)
     client.on_message = on_message
 
@@ -140,22 +151,33 @@ def run():
     if is_input_correct():
         global data
         data = []
+        if not ssh_connect():
+            return
+
+        if cfg['send_with'] == "TEST":
+            if(has_ip):
+                http_to_send_request()
+            else:
+                try:
+                    client = connect_mqtt()
+                    getdata_mqtt(client)
+                    http_to_send_request()
+                except Exception as ex:
+                    print(f'MQTT connection failed \n{ex}')
+            return
         if cfg['send_with'] == "MQTT" or has_ip == False:
             try:
                 client = connect_mqtt()
-                client.loop_start()
                 getdata_mqtt(client)
-                time.sleep(1)
-                client.loop_stop()
-
                 if cfg['send_with'] == "MQTT":
                     mqtt_send_command(client)
             except Exception as ex:
                 print(f'MQTT connection failed \n{ex}')
+                return
         if cfg['send_with'] == "HTTP":
-            http_send_command()
-        time.sleep(10)
-        ssh_connect()
+            http_to_send_request(need_to_send_commands=True)
+        time.sleep(3)
+        ssh_connect(need_to_send_commands=True)
 
 
 if __name__ == '__main__':

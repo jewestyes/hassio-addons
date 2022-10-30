@@ -2,7 +2,7 @@ FROM python:3
 
 WORKDIR /app
 
-RUN pip install --no-cache-dir --upgrade pip && \
+RUN pip install --no-cache-dir pip && \
     pip install --no-cache-dir paramiko && \
     pip install --no-cache-dir PyYML && \
     pip install --no-cache-dir paho-mqtt && \
