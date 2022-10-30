@@ -157,9 +157,7 @@ def run():
             return
 
         if cfg['send_with'] == "TEST":
-            if(has_ip):
-                http_send_request()
-            else:
+            if not has_ip:
                 try:
                     client = connect_mqtt()
                     getdata_mqtt(client)
@@ -171,6 +169,8 @@ def run():
                 except Exception as ex:
                     print(f'MQTT connection failed \n{ex}')
                     return
+            http_send_request()
+
         if cfg['send_with'] == "MQTT" or has_ip == False:
             try:
                 client = connect_mqtt()
