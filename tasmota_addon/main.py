@@ -114,25 +114,6 @@ def connect_mqtt() -> mqtt_client:
     client.on_connect = on_connect
     client.connect(broker, mqtt_port)
     return client
-    def on_connect(client, userdata, flags, rc):
-        if rc == 0:
-            print("Connected to MQTT Broker!")
-        else:
-            print("Failed to connect, return code %d\n", rc)
-
-    global broker, topic
-
-    broker = cfg['mqtt_broker']
-    topic = "tasmota/discovery"
-    username = cfg['mqtt_username']
-    password = cfg['mqtt_password']
-    mqtt_port = cfg['mqtt_port']
-    client_id = f'python-mqtt-{random.randint(0, 1000)}'
-    client = mqtt_client.Client(client_id)
-    client.username_pw_set(username, password)
-    client.on_connect = on_connect
-    client.connect(broker, mqtt_port)
-    return client
 
 
 def publish(topic, command, client):
