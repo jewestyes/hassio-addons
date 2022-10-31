@@ -1,7 +1,7 @@
 ---
 name: tasmota-addon
 slug: tasmota-addon-test
-version: 1.9
+version: 2.0
 description: Just a Simple Addon
 url: https://github.com/jewestyes
 arch:
