@@ -171,10 +171,11 @@ def run():
                 client = connect_mqtt()
                 getdata_mqtt(client)
                 if not client.is_connected():
+                    print(f'MQTT connection failed')
                     return
-                if cfg['send_with'] == "MQTT":
-                    mqtt_send_command(client)
-                if(len(data) == 0):
+
+                mqtt_send_command(client)
+                if len(data) == 0:
                     print(f'Can\'t find devices in {topic}')
                     return
             except Exception as ex:
