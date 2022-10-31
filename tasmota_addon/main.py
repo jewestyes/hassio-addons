@@ -72,7 +72,6 @@ def is_input_correct():
 
 
 def http_send_request(need_to_send_commands=False):
-    print('Start sending requests via HTTP')
     if not has_ip:
         if len(data) == 0:
             print('ip addresses not found')
@@ -81,6 +80,7 @@ def http_send_request(need_to_send_commands=False):
             device_ip.append(d['ip'])
     for ip in device_ip:
         try:
+            print('Start sending requests via HTTP')
             if(need_to_send_commands):
                 response = requests.get(url=f"http://{ip}/wi?s1={wifi_ssid}&p1={wifi_pass}&save=")
             else:
@@ -107,7 +107,7 @@ def connect_mqtt() -> mqtt_client:
     topic = "tasmota/discovery"
     username = cfg['mqtt_username']
     password = cfg['mqtt_password']
-    mqtt_port = cfg['mqtt_port']
+    mqtt_port = int(cfg['mqtt_port'])
     client_id = f'python-mqtt-{random.randint(0, 1000)}'
     client = mqtt_client.Client(client_id)
     client.username_pw_set(username, password)
@@ -155,23 +155,19 @@ def run():
         data = []
         if not ssh_connect():
             return
-
+        if not has_ip and cfg['send_with'] != "MQTT":
+            try:
+                client = connect_mqtt()
+                getdata_mqtt(client)
+                if not client.is_connected():
+                    return
+            except Exception as ex:
+                print(f'MQTT connection failed \n{ex}')
+                return
         if cfg['send_with'] == "TEST":
-            if not has_ip:
-                try:
-                    client = connect_mqtt()
-                    getdata_mqtt(client)
-
-                    if not client.is_connected():
-                        return
-                    http_send_request()
-                    return
-                except Exception as ex:
-                    print(f'MQTT connection failed \n{ex}')
-                    return
             http_send_request()
-
-        if cfg['send_with'] == "MQTT" or has_ip == False:
+            return
+        if cfg['send_with'] == "MQTT":
             try:
                 client = connect_mqtt()
                 getdata_mqtt(client)
@@ -179,6 +175,9 @@ def run():
                     return
                 if cfg['send_with'] == "MQTT":
                     mqtt_send_command(client)
+                if(len(data) == 0):
+                    print(f'Can\'t find devices in {topic}')
+                    return
             except Exception as ex:
                 print(f'MQTT connection failed \n{ex}')
                 return
