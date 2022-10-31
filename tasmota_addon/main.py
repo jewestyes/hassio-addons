@@ -62,8 +62,7 @@ def is_input_correct():
         device_ip = []
 
     if cfg['send_with'] == "MQTT" or has_ip == False:
-        mqtt_broker = cfg['mqtt_broker']
-        if not re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', mqtt_broker):
+        if not re.match(r'^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$', cfg['mqtt_broker']) or len(cfg['mqtt_port']) == 0:
             log.append('mqtt_broker is not correct!')
 
     if len(log) > 0:
